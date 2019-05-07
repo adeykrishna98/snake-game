@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>game</title>
+</head>
+
+<body style="background:black;margin:0">
+    <style>
+        canvas#mycanvas {
+            background-color: white;
+            margin: auto;
+            display: block;
+        }
+    </style>
+    <canvas id="mycanvas"></canvas>
+    <script>
+        var circles = [];
+        var blocks = [];
+        var food = [];
+        var points = [];
+        var cols = [];
+        var BLOCK_RADIUS = 20;
+        var CIRCLE_RADIUS = 5;
+        var CIRCLE_DIAMETER = 10;
+        var radius = 10;
+        var BLOCK_MARGIN = 1;
+        var SPEED = 4.5;
+        var startAnimationEnded = false;
+        var pause = false;
+        var blocked = false;
+        var hitBlock = null;
+        var lastCoordinateX = 0;
+        var lastBlockCollisionTime = 0;
+        var lastAddedTime = 0;
+        var end = false;
+        var xPosition;
+
+        var availableCircle = {
+            x: 0,
+            y: 0,
+            value: 10
+        }
+
+
+        var canvas = document.querySelector('canvas');
+        var context = canvas.getContext('2d');
+        var scale = window.devicePixelRatio;
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // context.scale(scale, scale);
+        var halfCanvasHeight = (window.innerHeight * scale) / 2;
+        var halfCanvasWidth = (window.innerWidth * scale) / 2;
+        const oneColWith = halfCanvasWidth / 2;
+
+
+
+
+        for (let i = 1; i <= 5; i++) {
+            this.cols.push(oneColWith * i)
+        }
+
+        // drawing block , cricle and points
+        function draw() {
+            drawRect(0, 0, canvas.width, canvas.height, 'grey');
+            for (const block of blocks) {
+                if (block.value > 0) {
+                    drawBlocks(block.x, block.y, block.size, block.color);
+                    drawText(
+                        block.x + ((block.size / 2) - (block.value > 9 ? (10 * scale) : (6 * scale))),
+                        block.y + (block.size / 2) + (7 * scale),
+                        17 * scale,
+                        'black',
+                        'Montserrat-Regular',
+                        block.value
+                    )
+                }
+            };
+            for (const point of points) {
+
+                drawCircle(
+                    point.x,
+                    point.y,
+                    CIRCLE_RADIUS * scale,
+                    `white`
+                )
+
+                drawText(
+                    point.x - 5,
+                    point.y + 6,
+                    8 * scale,
+                    'green',
+                    'Montserrat-Regular',
+                    point.value
+                )
+            }
+            for (const circle of circles) {
+                drawCircle(
+                    circle.x,
+                    circle.y,
+                    CIRCLE_RADIUS * scale,
+                    `rgb(255, 204, 0)`
+                )
+            }
+        }
+
+        const defaultX = halfCanvasWidth / 2 - (canvas.width / 6)
+        const defaultY = halfCanvasHeight / 2 + (canvas.height / 6)
+        let increamentValue = 1
+        for (let i = 0; i < availableCircle.value; i++) {
+            increamentValue = increamentValue + 20
+            this.circles.push({
+                x: defaultX,
+                y: defaultY + increamentValue
+            })
+        }
+
+        function drawRect(x, y, width, height, color) {
+            context.fillStyle = color
+            context.fillRect(x, y, width, height)
+        };
+
+        function drawCircle(centerX, centerY, radius, color) {
+            context.fillStyle = color
+            context.beginPath()
+            context.arc(centerX, centerY, radius, 0, Math.PI * 2)
+            context.fill()
+        }
+
+
+        function drawBlocks(x, y, size, color) {
+            const blockRadius = BLOCK_RADIUS
+
+            context.strokeStyle = color;
+            context.lineJoin = "round";
+            context.lineWidth = blockRadius;
+            context.strokeRect(
+                x + (blockRadius / 2),
+                y + (blockRadius / 2),
+                size - blockRadius,
+                size - blockRadius
+            );
+            context.fillStyle = color;
+            context.fillRect(
+                x + (blockRadius / 2),
+                y + (blockRadius / 2),
+                size - blockRadius,
+                size - blockRadius
+            );
+        }
+
+        function getBlockColor(blockValue) {
+
+            const currentPoints = this.availableCircle.value;
+
+            if (blockValue === 1) {
+                return '#69F0AE'
+            } else if (blockValue <= 4) {
+                return '#00E676'
+            } else if (blockValue <= 8) {
+                return '#00C853'
+            } else if (blockValue <= 12) {
+                return '#FFD54F'
+            } else if (blockValue <= 16) {
+                return '#FFCA28'
+            } else if (blockValue <= 20) {
+                return '#FF8F00'
+            } else if (blockValue >= 21) {
+                return '#D84315'
+            }
+        }
+
+        function addBlocks() {
+            const margin = BLOCK_MARGIN
+            const blockSize = (canvas.width / 5)
+
+            for (let i = 0; i < 4; i++) {
+
+                let x;
+                var myrandom = Math.floor(Math.random()*2);
+                console.log(myrandom)
+                if (i === 0) {
+                    x = margin
+                } else {
+                    x = margin + (blockSize * i*myrandom)
+                    console.log(x)
+                }
+
+                const value = Math.floor(Math.random() * (availableCircle.value * 2)) + 1
+
+                this.blocks.push({
+                    x: x,
+                    y: -(blockSize * 4),
+                    size: blockSize - (margin * 2),
+                    value: value,
+                    color: getBlockColor(value)
+                })
+            }
+        }
+        //  console.log(blocks, "blcoks")
+
+        function addPoints() {
+            const numberOfPoints = Math.floor(Math.random() * 3) + 1
+            for (var i = 0; i < numberOfPoints; i++) {
+                this.points.push({
+                    x: cols[i],
+                    y: 40,
+                    value: Math.floor(Math.random() * 5) + 1
+                })
+            }
+
+        }
+
+        function drawText(x, y, textSize, color, font, text) {
+            context.font = `normal ${textSize}px ${font}`;
+            context.fillStyle = color
+            context.fillText(text, x, y);
+        }
+
+        //console.log(points)
+        function updatedPoints() {
+            this.points = this.points.reduce((prev, point) => {
+
+            })
+        }
+
+        function updateCircles() {
+            // console.log(lastCoordinateX)
+            // if (this.lastCoordinateX === 0 || this.circles.length === 0) {
+            //     return false;
+            // }
+            //console.log(this.lastCoordinateX)
+            if (this.lastCoordinateX >= 0 + this.CIRCLE_RADIUS && this.lastCoordinateX <= canvas.width - this
+                .CIRCLE_RADIUS) {
+                this.circles[0].x = this.lastCoordinateX
+                for (var i = 1; i < this.circles.length; i++) {
+                    let circle = this.circles[i],
+                        prev = this.circles[i - 1],
+                        distance = Math.sqrt((circle.x - prev.x) * (circle.x - prev.x)),
+                        speed = Math.abs(circle.x - prev.x) / (2 * scale);
+                    circle.y = prev.y + (this.CIRCLE_DIAMETER * scale);
+                   // console.log(circle, prev, speed, distance)
+
+                    if (distance < speed) {
+                        circle.x = prev.x;
+                    } else if (circle.x > prev.x && (circle.x - speed) >= 0) {
+                        circle.x -= speed;
+                    } else if (circle.x < prev.x && (circle.x - speed) <= canvas.width) {
+                        circle.x += speed;
+                    }
+                }
+            }
+
+
+            if (!this.blocked) {
+                this.circles = this.circles.reduce((previous, block, key) => {
+
+                    if (block.y >= canvas.height) {
+                        return previous;
+                    }
+
+                    // Remove the block from the array if value is 0
+                    if (block.value === 0) {
+                        return previous
+                    }
+
+                    let {
+                        y,
+                        ...props
+                    } = block
+                    // console.log(y)
+                    return previous.concat([{
+                        y: y -= (this.SPEED * scale / 25),
+                        ...props
+                    }])
+
+                }, []);
+            }
+        };
+
+        function updateBlocks() {
+
+            if (this.end || this.pause) {
+                return false
+            }
+
+            // First check for collision //
+            for (const block of this.blocks) {
+                //console.log(block)
+                const blockBottomPosition = block.y + block.size
+                const blockMargin = this.BLOCK_MARGIN * scale
+                const playerX = this.circles[0].x;
+                const playerY = this.circles[0].y;
+
+                if (blockBottomPosition >= (playerY - (this.CIRCLE_DIAMETER + 1)) &&
+                    blockBottomPosition <= (playerY + this.CIRCLE_DIAMETER)
+                ) {
+                    // Collision X
+                    if (playerX > (block.x - blockMargin) &&
+                        playerX < ((block.x - blockMargin) + (block.size + blockMargin))
+                    ) {
+
+                        if (block.value > 0) {
+                            this.blocked = true
+                            this.hitBlock = block
+                        } else {
+                            this.blocked = false
+                            this.hitBlock = null
+                        }
+
+                    }
+                }
+            }
+
+            // Update blocks position and handle blocks to remove
+            if (!this.blocked) {
+
+                this.blocks = this.blocks.reduce((previous, block, key) => {
+
+                    // Remove the block from the array when outside of canvas
+                    if (block.y >= canvas.height) {
+                        return previous;
+                    }
+
+                    // Remove the block from the array if value is 0
+                    if (block.value === 0) {
+                        return previous
+                    }
+
+                    let {
+                        y,
+                        ...props
+                    } = block
+
+                    return previous.concat([{
+                        y: y += (this.SPEED * scale) / 2,
+                        ...props
+                    }])
+
+                }, []);
+            }
+        }
+
+        function updatePoints() {
+
+            // if (this.blocked || this.end || this.pause) {
+            //     return false
+            // }
+
+            this.points = this.points.reduce((previous, point) => {
+
+                // Check if the points y position are upper than canvas height
+                if (point.y < (halfCanvasHeight * 2)) {
+
+                    // Collision with points
+                    if (point.y > (this.availableCircle.y - 10) && point.y < this.availableCircle.y + 40 &&
+                        point.x > (this.availableCircle.x - 10) && point.x < this.availableCircle.x + 40
+                    ) {
+
+                        // Adding points as circles on the screen
+                        for (let i = 0; i < point.value; i++) {
+                            const lastCircle = this.circles[this.circles.length - 1];
+
+                            this.circles.push({
+                                x: lastCircle.x,
+                                y: lastCircle.y + (20 * scale)
+                            })
+                        }
+
+                        this.availableCircle.value += point.value;
+                        this.score += point.value;
+
+                        return previous
+                    } else {
+
+                        if (!this.blocked) {
+
+                            let {
+                                y,
+                                ...props
+                            } = point;
+
+                            return previous.concat([{
+                                y: y + (this.SPEED * scale) / 4,
+                                ...props
+                            }])
+                        }
+                        return previous
+                    }
+                }
+                return previous
+            }, [])
+        }
+
+        function handleBlockCollision() {
+            if (this.hitBlock !== null && this.hitBlock.value > 0 && this.availableCircle.value > 0) {
+                this.hitBlock.value -= 1
+
+                this.availableCircle.value -= 1
+
+                if (this.availableCircle.value === 0 && !this.end) {
+                    this.end = true
+                    window.cancelAnimationFrame(this.play_animation)
+                    canvas.removeEventListener("touchmove", this.onTouch);
+                    canvas.addEventListener("touchstart", this.onTouch);
+
+                    if (this.bestScore === 0 || this.score > this.bestScore) {
+                        this.newBestScore = true
+                        this.bestScore = this.score
+                        localStorage.setItem('bestScore', this.score)
+                    }
+
+
+                }
+                circles.pop()
+
+            }
+        }
+
+
+        canvas.addEventListener("mousemove", function (e) {
+            // yPosition = e.clientY;
+            // console.log(e.clientX)
+            const touch = e.pageX;
+           
+            
+
+
+            if (this.lastCoordinateX === 0) {
+                this.lastCoordinateX = Math.abs(halfCanvasWidth - touch.pageX) * scale
+                return false
+            }
+
+            this.distanceToX = Math.abs(this.lastCoordinateX - touch.pageX) * scale
+            this.swipeDirection = (this.lastCoordinateX > touch.pageX ? 'left' : 'right');
+            lastCoordinateX = touch * 1
+            console.log(this.lastCoordinateX)
+        });
+
+
+
+
+        canvas.addEventListener("touchmove", function (e) {
+
+            const touch = e.changedTouches[0];
+            // console.log(touch)
+
+            if (this.lastCoordinateX === 0) {
+                this.lastCoordinateX = Math.abs(halfCanvasWidth - touch.pageX)
+                return false
+            }
+            lastCoordinateX = touch.pageX
+            // console.log(lastCoordinateX,">,::")
+            // console.log(e.touches[0].screenX)
+        });
+        window.requestAnimationFrame(function playAnimation(timestamp) {
+            if (!this.end) {
+                let initial = 0
+                if (!lastAddedTime && !lastBlockCollisionTime && initial === 0) {
+                    lastAddedTime = lastBlockCollisionTime = timestamp
+                    initial = initial + 1
+
+                    addPoints();
+                    addBlocks();
+                } else {
+
+                    if (timestamp - lastAddedTime >= 2000) {
+                        this.addBlocks();
+                        this.addPoints();
+                        this.lastAddedTime = timestamp;
+
+                    } else if (timestamp - this.lastBlockCollisionTime >= 100) {
+
+                        if (this.blocked) {
+                            this.handleBlockCollision()
+                        }
+                        this.lastBlockCollisionTime = timestamp
+                    }
+                }
+            }
+            //console.log(circles)
+
+            this.updateCircles();
+            this.updateBlocks();
+            this.updatePoints();
+            this.draw()
+
+            // if(circles.length>0){
+            //     console.log("indis")
+            //      smoothcurve(xPosition,circles[0].y)
+            // }
+            // 
+            if (timestamp > 10) {
+                window.requestAnimationFrame(playAnimation)
+            }
+        });
+    </script>
+
+</body>
+
+</html>
